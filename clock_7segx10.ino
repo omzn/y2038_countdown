@@ -577,9 +577,8 @@ void handleStatus() {
   JsonObject& json = jsonBuffer.createObject();
 
   DateTime now = rtc.now();
-  uint32_t ut = now.unixtime();
-  int32_t countdown = 0x7fffffff - ut;
-  json["unixtime"] = ut;
+  int32_t countdown = (0x7FFFFFFF - (now.unixtime()-SECONDS_UTC_TO_JST));
+  json["unixtime"] = now.unixtime();
   json["countdown"] = countdown;
   json["mode"] = dispmode;
   json.printTo(message);
@@ -595,9 +594,9 @@ void handleActionDispmode() {
 
   for (int i = 0; i < webServer.args(); i++) {
     argname = webServer.argName(i);
-    p = argname.toInt();
-    if (p >= 0) {
-      break;
+    argv=webServer.arg(i);
+    if (argname == "value") {
+      p = argv.toInt();
     }
   }
   if (p >= 0) {

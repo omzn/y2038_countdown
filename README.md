@@ -63,15 +63,17 @@ stores time even if the power is not supplied.
 
 This device provides HTTP service and REST API.
 
-| API |  value |   effect         |
-|-----|-------|----------------|
-| mode|   int   | change mode  |
-| status| --  | show status     |
+| API | parameter| value |   effect         |
+|-----|----------|-------|----------------|
+| mode| value    |  int   | change mode  |
+| status| --     | --     | show status     |
 
 ```
 $ curl http://esp_7seg.local/status
+{"unixtime":1517957705,"countdown":629525942,"mode":0}
 
-$ curl "http://esp_7seg.local/mode?0"
+$ curl "http://esp_7seg.local/mode?value=2"
+{"mode":2}
 ```
 
 ## GitHub

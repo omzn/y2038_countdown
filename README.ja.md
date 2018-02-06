@@ -78,15 +78,17 @@ ntpサーバに接続すると，時計を自動的に合わせて，動作を�
 
 簡易httpサーバになっていますので，REST APIもどきが使えます．
 
-| API |  値域 |   効果         |
-|-----|-------|----------------|
-| mode| int   | 動作モード変更  |
-| status| --  | 状況を知る     |
+| API | parameter| value |   effect         |
+|-----|----------|-------|----------------|
+| mode| value    |  int   | change mode  |
+| status| --     | --     | show status     |
 
 ```
 $ curl http://esp_7seg.local/status
+{"unixtime":1517957705,"countdown":629525942,"mode":0}
 
-$ curl "http://esp_7seg.local/mode?0"
+$ curl "http://esp_7seg.local/mode?value=2"
+{"mode":2}
 ```
 
 ## GitHub
