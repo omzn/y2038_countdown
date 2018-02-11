@@ -34,6 +34,7 @@ extern "C" {
 #include <ArduinoJson.h>
 #include <RTClib.h>
 #include <FS.h>
+//#include <ArduinoOTA.h>
 #include "ntp.h"
 #include "anodecommon_7seg.h"
 
@@ -186,6 +187,26 @@ void setup() {
     Serial.println("\"");
 #endif
   } else {
+ /*   
+    ArduinoOTA.onStart([]() {
+      Serial.println("Start");
+    });
+    ArduinoOTA.onEnd([]() {
+      Serial.println("\nEnd");
+    });
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    });
+    ArduinoOTA.onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+    ArduinoOTA.begin();
+*/
     ntp.begin();
     clockdisp.writeDigitRaw(1, 0x40); // -
     clockdisp.writeDigitRaw(8, 0x40); // -
@@ -207,6 +228,7 @@ void loop() {
     dnsServer.processNextRequest();
   }
   webServer.handleClient();
+//  ArduinoOTA.handle();
 
   if (btnint == 1) {
     dispmode++;
@@ -517,6 +539,7 @@ void startWebServer_setting() {
     s += "\".</p><p><button class=\"pure-button\" onclick=\"return quitBox();\">Close</button></p>";
     s += "<script>function quitBox() { open(location, '_self').close();return false;};setTimeout(\"quitBox()\",10000);</script>";
     webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
+    delay(3000);
     timer_count = 0;
     ESP.restart();
   });
@@ -539,7 +562,7 @@ void startWebServer_setting() {
 <div class="l-box">
 <h3 class="if-head">WiFi Setting</h3>
 <p>Please enter your password by selecting the SSID.<br />
-You can specify site name for accessing a name like http://aquamonitor.local/</p>
+You can specify site name for accessing a name like http://cc2038.local/</p>
 <form class="pure-form pure-form-stacked" method="get" action="setap" name="tm"><label for="ssid">SSID: </label>
 <select id="ssid" name="ssid">
 )=====";
@@ -570,10 +593,7 @@ void startWebServer_normal() {
       EEPROM.write(i, 0);
     }
     EEPROM.commit();
-    String s = "<h3 class=\"if-head\">Reset ALL</h3><p>Cleared all settings. Please reset device.</p>";
-    s += "<p><button class=\"pure-button\" onclick=\"return quitBox();\">Close</button></p>";
-    s += "<script>function quitBox() { open(location, '_self').close();return false;};</script>";
-    webServer.send(200, "text/html", makePage("Reset ALL Settings", s));
+    send_fs("/reset.html","text/html");  
     timer_count = 0;
     ESP.restart();
   });
@@ -582,10 +602,7 @@ void startWebServer_normal() {
       EEPROM.write(i, 0);
     }
     EEPROM.commit();
-    String s = "<h3 class=\"if-head\">Reset WiFi</h3><p>Cleared WiFi settings. Please reset device.</p>";
-    s += "<p><button class=\"pure-button\" onclick=\"return quitBox();\">Close</button></p>";
-    s += "<script>function quitBox() { open(location, '_self').close();return false;}</script>";
-    webServer.send(200, "text/html", makePage("Reset WiFi Settings", s));
+    send_fs("/wifireset.html","text/html");  
     timer_count = 0;
     ESP.restart();
   });
@@ -827,7 +844,7 @@ String makePage(String title, String contents) {
   s += contents;
   s += R"=====(
 <div class="footer l-box">
-<p>WiFi 10x7Seg clock by @omzn 2018 / All rights researved</p>
+<p>The year 2038 countdown clock by @omzn 2018</p>
 </div>
 )=====";
   s += "</body></html>";
