@@ -15,9 +15,9 @@
 #define PIN_RTC_INT      (2)
 
 #define DISPLAY_ADDRESS  (0x70)
-#define NUM_MODES        (4)
+#define NUM_MODES        (5)
 
-enum {MODE_COUNTDOWN=0, MODE_UNIXTIME, MODE_DATE, MODE_CLOCK};
+enum {MODE_COUNTDOWN=0, MODE_UNIXTIME, MODE_DATE, MODE_CLOCK, MODE_USER_COUNTDOWN};
 
 //#define PIN_LIGHT         (15)
 // pin #15 is hw pulled down
@@ -35,6 +35,8 @@ enum {MODE_COUNTDOWN=0, MODE_UNIXTIME, MODE_DATE, MODE_CLOCK};
 #define EEPROM_PASS_ADDR            (32)
 #define EEPROM_MDNS_ADDR            (96)
 #define EEPROM_MODE_ADDR           (128)
-#define EEPROM_LAST_ADDR           (129)
+#define EEPROM_TZ_ADDR             (129)
+#define EEPROM_UCD_ADDR            (133)
+#define EEPROM_LAST_ADDR           (137)
 
 #endif

@@ -3,12 +3,23 @@
 
    /status
    /mode
+   /countdown
+     date=YYYY-MM-DD
+     time=hh:mm
+     timezone=-0400
+   /config
+     timezone=0900
+
    /wifireset
    /reset
    /reboot
 */
 
 #include "esp_7seg.h" // Configuration parameters
+
+extern "C" {
+#include <user_interface.h>
+}
 
 #include <pgmspace.h>
 #include <Wire.h>
@@ -28,13 +39,15 @@
 
 const String boolstr[2] = {"false", "true"};
 
-String site_name  = "esp_7seg";
+String site_name  = "cc2038";
 const char* apSSID = "CC2038";
 boolean settingMode;
 String ssidList;
 
 uint32_t timer_count = 0;
-uint32_t p_millis;
+uint32_t p_millis, btn_millis;
+int32_t timezone = 0;
+uint32_t user_countdown_epoch;
 
 DNSServer dnsServer;
 MDNSResponder mdns;
@@ -61,8 +74,6 @@ void RTCHandler() {
 void BTNHandler() {
   detachInterrupt(PIN_BTN);
   delayMicroseconds(10000);
-  dispmode++;
-  dispmode %= NUM_MODES;
   btnint = 1;
   attachInterrupt(PIN_BTN, BTNHandler, FALLING);
 }
@@ -70,9 +81,13 @@ void BTNHandler() {
 /* Setup and loop */
 
 void setup() {
+  ESP.wdtDisable();
+  wifi_set_sleep_type(LIGHT_SLEEP_T);
+
   dispmode = 0;
   rtcint = 0;
   p_millis = millis();
+  btn_millis = 0;
   Serial.begin(115200);
   EEPROM.begin(512);
   delay(10);
@@ -87,6 +102,8 @@ void setup() {
   clockdisp.clear();
   clockdisp.writeDisplay();
   SPIFFS.begin();
+
+  ESP.wdtFeed();
 
 #ifdef USE_DS1307
   if (! rtc.isrunning() ) {
@@ -103,16 +120,25 @@ void setup() {
   Serial.println("RTC began");
 #endif
 #ifdef Y2038TEST
+#ifdef DEBUG
   Serial.println("60 secs to year 2038");
+#endif
 #endif
   clockdisp.writeDigitRaw(4, 0x40); // -
   clockdisp.writeDigitRaw(5, 0x40); // -
   clockdisp.writeDisplay();
 
+  ESP.wdtFeed();
+
   WiFi.persistent(false);
+  //  WiFi.disconnect(true);
   WiFi.mode(WIFI_STA);
   if (restoreConfig()) {
+    clockdisp.writeDigitRaw(3, 0x40); // -
+    clockdisp.writeDigitRaw(6, 0x40); // -
+    clockdisp.writeDisplay();
     if (checkConnection()) {
+      ESP.wdtFeed();
       if (mdns.begin(site_name.c_str(), WiFi.localIP())) {
 #ifdef DEBUG
         Serial.println("MDNS responder started.");
@@ -125,17 +151,10 @@ void setup() {
   } else {
     settingMode = true;
   }
-  clockdisp.writeDigitRaw(3, 0x40); // -
-  clockdisp.writeDigitRaw(6, 0x40); // -
-  clockdisp.writeDisplay();
-  if (settingMode == true) {
+  ESP.wdtFeed();
+  if (settingMode) {
 #ifdef DEBUG
     Serial.println("Setting mode");
-#endif
-    //WiFi.mode(WIFI_STA);
-    //WiFi.disconnect();
-#ifdef DEBUG
-    Serial.println("Wifi disconnected");
 #endif
     delay(100);
     WiFi.mode(WIFI_AP);
@@ -157,7 +176,7 @@ void setup() {
     clockdisp.writeDigitRaw(6, 0x44); // t
     clockdisp.writeDigitRaw(7, 0x00); //
     clockdisp.writeDigitRaw(8, 0x77); // A
-    clockdisp.writeDigitRaw(9, 0x73); // P
+    clockdisp.writeDigitRaw(9, 0xF3); // P.
     clockdisp.writeDisplay();
 
     startWebServer_setting();
@@ -168,8 +187,8 @@ void setup() {
 #endif
   } else {
     ntp.begin();
-    clockdisp.writeDigitRaw(2, 0x40); // -
-    clockdisp.writeDigitRaw(7, 0x40); // -
+    clockdisp.writeDigitRaw(1, 0x40); // -
+    clockdisp.writeDigitRaw(8, 0x40); // -
     clockdisp.writeDisplay();
     delay(100);
     startWebServer_normal();
@@ -177,9 +196,10 @@ void setup() {
     Serial.println("Starting normal operation.");
 #endif
   }
-  ESP.wdtEnable(100);
+  //ESP.wdtEnable(100);
 }
 
+boolean apmode = false;
 
 void loop() {
   ESP.wdtFeed();
@@ -189,9 +209,12 @@ void loop() {
   webServer.handleClient();
 
   if (btnint == 1) {
+    dispmode++;
+    dispmode %= NUM_MODES;
     EEPROM.write(EEPROM_MODE_ADDR, char(dispmode));
     EEPROM.commit();
     btnint = 0;
+    settingMode = false;
   }
   // 1秒毎に実行
 #ifdef USE_DS1307
@@ -205,7 +228,7 @@ void loop() {
       uint32_t epoch = ntp.getTime();
       if (epoch > 0) {
 #ifndef Y2038TEST
-        rtc.adjust(DateTime(epoch + SECONDS_UTC_TO_JST ));
+        rtc.adjust(DateTime(epoch + timezone ));
 #endif
       }
 #ifdef DEBUG
@@ -220,14 +243,16 @@ void loop() {
 #endif
       clockdisp.clear();
       if (dispmode == MODE_UNIXTIME) {
-        dispDigits(now.unixtime()-SECONDS_UTC_TO_JST);
+        dispDigits(now.unixtime() - timezone);
       } else if (dispmode == MODE_COUNTDOWN) {
-//        dispDigits((int32_t)(0x7FFFFFFF - (now.unixtime()-SECONDS_UTC_TO_JST)));
-        dispDigits((0x7FFFFFFF - (now.unixtime()-SECONDS_UTC_TO_JST))); // y 2038!
+        //        dispDigits((int32_t)(0x7FFFFFFF - (now.unixtime()-timezone)));
+        dispDigits((0x7FFFFFFF - (now.unixtime() - timezone))); // y 2038!
       } else if (dispmode == MODE_CLOCK) {
         dispClock(now);
       } else if (dispmode == MODE_DATE) {
         dispDate(now);
+      } else if (dispmode == MODE_USER_COUNTDOWN) {
+        dispDigits((int32_t)(user_countdown_epoch - (now.unixtime() - timezone)));
       }
       clockdisp.writeDisplay();
     } else {
@@ -250,7 +275,7 @@ void loop() {
         clockdisp.writeDigitNum(4, 2, 0); // 2
         clockdisp.writeDigitNum(5, 0, 0); // 0
         clockdisp.writeDigitNum(6, 3, 0); // 3
-        clockdisp.writeDigitNum(7, 8, 0); // 8               
+        clockdisp.writeDigitNum(7, 8, 0); // 8
       }
       clockdisp.writeDisplay();
     }
@@ -263,7 +288,7 @@ void loop() {
 
 void dispDigits(int64_t digits) {
 #ifdef DEBUG
-      Serial.println((int32_t)digits);
+  Serial.println((int32_t)digits);
 #endif
   uint8_t sign = 0;
   uint8_t pos = SEVENSEG_DIGITS - 1;
@@ -398,6 +423,14 @@ boolean restoreConfig() {
     int e_mode  = EEPROM.read(EEPROM_MODE_ADDR);
     dispmode = e_mode % NUM_MODES;
 
+    timezone = 0;
+    user_countdown_epoch = 0;
+    for (int i = 0; i < 4; i++) {
+      uint32_t tzb = EEPROM.read(EEPROM_TZ_ADDR + i);
+      timezone |= (tzb << (i * 8));
+      uint32_t uce = EEPROM.read(EEPROM_UCD_ADDR + i);
+      user_countdown_epoch |= (uce << (i * 8));
+    }
     return true;
   } else {
 #ifdef DEBUG
@@ -418,6 +451,15 @@ boolean checkConnection() {
       return true;
     }
     delay(500);
+    ESP.wdtFeed();
+    if (count % 2) {
+      clockdisp.writeDigitRaw(2, 0x40); // -
+      clockdisp.writeDigitRaw(7, 0x40); // -
+    } else {
+      clockdisp.writeDigitRaw(2, 0x00); // -
+      clockdisp.writeDigitRaw(7, 0x00); // -
+    }
+    clockdisp.writeDisplay();
 #ifdef DEBUG
     Serial.print(".");
 #endif
@@ -476,6 +518,7 @@ void startWebServer_setting() {
     s += "<script>function quitBox() { open(location, '_self').close();return false;};setTimeout(\"quitBox()\",10000);</script>";
     webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
     timer_count = 0;
+    ESP.restart();
   });
   webServer.onNotFound([]() {
 #ifdef DEBUG
@@ -532,6 +575,7 @@ void startWebServer_normal() {
     s += "<script>function quitBox() { open(location, '_self').close();return false;};</script>";
     webServer.send(200, "text/html", makePage("Reset ALL Settings", s));
     timer_count = 0;
+    ESP.restart();
   });
   webServer.on("/wifireset", []() {
     for (int i = 0; i < EEPROM_MDNS_ADDR; ++i) {
@@ -543,15 +587,15 @@ void startWebServer_normal() {
     s += "<script>function quitBox() { open(location, '_self').close();return false;}</script>";
     webServer.send(200, "text/html", makePage("Reset WiFi Settings", s));
     timer_count = 0;
+    ESP.restart();
   });
   webServer.on("/", handleRoot);
   webServer.on("/pure.css", handleCss);
   webServer.on("/reboot", handleReboot);
   webServer.on("/mode", handleActionDispmode);
-//  webServer.on("/off", handleActionOff);
-//  webServer.on("/power", handleActionPower);
+  webServer.on("/countdown", handleActionUserCountdown);
   webServer.on("/status", handleStatus);
-//  webServer.on("/config", handleConfig);
+  webServer.on("/config", handleConfig);
   webServer.begin();
 }
 
@@ -570,17 +614,18 @@ void handleReboot() {
   ESP.restart();
 }
 
-
 void handleStatus() {
   String message;
   DynamicJsonBuffer jsonBuffer;
   JsonObject& json = jsonBuffer.createObject();
 
   DateTime now = rtc.now();
-  int32_t countdown = (0x7FFFFFFF - (now.unixtime()-SECONDS_UTC_TO_JST));
+  int32_t countdown = (0x7FFFFFFF - (now.unixtime()-timezone));
   json["unixtime"] = now.unixtime();
-  json["countdown"] = countdown;
+  json["y2038countdown"] = countdown;
   json["mode"] = dispmode;
+  json["timezone"] = timezone;
+  json["user_countdown_epoch"] = user_countdown_epoch;
   json.printTo(message);
   webServer.send(200, "application/json", message);
 }
@@ -611,6 +656,112 @@ void handleActionDispmode() {
   json.printTo(message);
   webServer.send(200, "application/json", message);
 }
+
+void handleActionUserCountdown() {
+  String message, argname, argv;
+  int p = -1,err;
+
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+  int yyyy,mm,dd,h,m,tzs = -1;
+  
+  for (int i = 0; i < webServer.args(); i++) {
+    argname = webServer.argName(i);
+    argv=webServer.arg(i);
+    if (argname == "date") {
+      yyyy = argv.substring(0,4).toInt();
+      mm = argv.substring(5,7).toInt();
+      dd = argv.substring(8,10).toInt();
+    } else if (argname == "time") {
+      h = argv.substring(0,2).toInt();
+      m = argv.substring(3,5).toInt();
+    } else if (argname == "timezone") {
+       if (argv.startsWith("-")) {
+          int tzh = argv.substring(1,3).toInt();        
+          int tzm = argv.substring(3,5).toInt();        
+          tzs = 0 - (tzh*60 + tzm) * 60;
+       } else {
+          int tzh = argv.substring(0,2).toInt();        
+          int tzm = argv.substring(2,4).toInt();        
+          tzs = (tzh*60 + tzm) * 60;
+       }
+    } 
+  }
+  if (tzs == -1) {
+    tzs = timezone;  
+  }
+  DateTime target = DateTime(yyyy,mm,dd,h,m,0); // UTC
+  user_countdown_epoch = target.unixtime() - tzs; 
+#ifdef DEBUG
+    Serial.print("y:");
+    Serial.print(yyyy);
+    Serial.print(" m:");
+    Serial.print(mm);
+    Serial.print(" d:");
+    Serial.print(dd);
+    Serial.print(" h:");
+    Serial.print(h);
+    Serial.print(" m:");
+    Serial.print(m);
+    Serial.print(" tzs:");
+    Serial.println(tzs);
+#endif
+  EEPROM.write(EEPROM_UCD_ADDR,   char(user_countdown_epoch & 0xFF));
+  EEPROM.write(EEPROM_UCD_ADDR+1,   char((user_countdown_epoch >> 8)  & 0xFF));
+  EEPROM.write(EEPROM_UCD_ADDR+2,   char((user_countdown_epoch >> 16) & 0xFF));
+  EEPROM.write(EEPROM_UCD_ADDR+3,   char((user_countdown_epoch >> 24) & 0xFF));
+  EEPROM.commit();
+
+  json["user_countdown_epoch"] = user_countdown_epoch;
+  json.printTo(message);
+  webServer.send(200, "application/json", message);
+}
+
+void handleConfig() {
+  String message,argname,argv;
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+
+  for (int i = 0; i < webServer.args(); i++) {
+    argname = webServer.argName(i);
+    argv = webServer.arg(i);
+#ifdef DEBUG
+    Serial.print("argname:");
+    Serial.print(argname);
+    Serial.print(" = ");
+    Serial.println(argv);
+#endif
+    if (argname == "timezone") {
+       if (argv.startsWith("-")) {
+          int tzh = argv.substring(1,3).toInt();        
+          int tzm = argv.substring(3,5).toInt();        
+          timezone = 0 - (tzh*60 + tzm)*60;
+       } else {
+          int tzh = argv.substring(0,2).toInt();        
+          int tzm = argv.substring(2,4).toInt();        
+          timezone = (tzh*60 + tzm)*60;
+       }
+#ifdef DEBUG
+    Serial.print("timezone:");
+    Serial.println(timezone);
+#endif          
+       EEPROM.write(EEPROM_TZ_ADDR,   char(timezone & 0xFF));
+       EEPROM.write(EEPROM_TZ_ADDR+1,   char((timezone >> 8)  & 0xFF));
+       EEPROM.write(EEPROM_TZ_ADDR+2,   char((timezone >> 16) & 0xFF));
+       EEPROM.write(EEPROM_TZ_ADDR+3,   char((timezone >> 24) & 0xFF));
+       EEPROM.commit();
+       json["timezone"] = timezone;
+       uint32_t epoch = ntp.getTime();
+       if (epoch > 0) {
+         rtc.adjust(DateTime(epoch + timezone ));
+       }
+    }
+  }
+
+  json.printTo(message);
+  webServer.send(200, "application/json", message);
+}
+
 /*
 void handleActionPower() {
   String message;
@@ -649,64 +800,6 @@ void handleActionOff() {
   webServer.send(200, "application/json", message);
 }
 
-void handleConfig() {
-  String message,argname,argv;
-  int en,on_h,on_m,off_h,off_m,dim;
-  DynamicJsonBuffer jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
-
-  on_h = on_m = off_h = off_m = dim = -1;
-
-  for (int i = 0; i < webServer.args(); i++) {
-    argname = webServer.argName(i);
-    argv = webServer.arg(i);
-#ifdef DEBUG
-    Serial.print("argname:");
-    Serial.print(argname);
-    Serial.print(" = ");
-    Serial.println(argv);
-#endif
-    if (argname == "enable") {
-       en = (argv ==  "true" ? 1 : 0);
-       light.enable(en);
-       EEPROM.write(EEPROM_SCHEDULE_ADDR, char(light.enable()));
-       EEPROM.commit();
-   } else if (argname == "on_h") {
-       on_h  = argv.toInt();
-    } else if (argname == "on_m") {
-       on_m  = argv.toInt();
-    } else if (argname == "off_h") {
-       off_h  = argv.toInt();
-    } else if (argname == "off_m") {
-       off_m  = argv.toInt();
-    } else if (argname == "dim") {
-       dim  = argv.toInt();
-       light.dim(dim);
-       EEPROM.write(EEPROM_DIM_ADDR,   char(light.dim() & 0xFF));
-       EEPROM.write(EEPROM_DIM_ADDR+1,   char(light.dim() >> 8));
-       EEPROM.commit();
-    }
-  }
-
-  if (!(on_h < 0 || on_m < 0 || off_h < 0 || off_m < 0)) {
-    light.schedule(on_h,on_m,off_h,off_m);
-    EEPROM.write(EEPROM_SCHEDULE_ADDR + 1, char(light.on_h()));
-    EEPROM.write(EEPROM_SCHEDULE_ADDR + 2, char(light.on_m()));
-    EEPROM.write(EEPROM_SCHEDULE_ADDR + 3, char(light.off_h()));
-    EEPROM.write(EEPROM_SCHEDULE_ADDR + 4, char(light.off_m()));
-    EEPROM.commit();
-  }
-  
-  json["enable"] = boolstr[light.enable()];
-  json["dim"] = light.dim();
-  json["on_h"] = light.on_h();
-  json["on_m"] = light.on_m();
-  json["off_h"] = light.off_h();
-  json["off_m"] = light.off_m();
-  json["timestamp"] = timestamp();  
-  json.printTo(message);
-  webServer.send(200, "application/json", message);
-}
 */
 
 void send_fs (String path,String contentType) {

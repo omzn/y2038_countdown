@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The year 2038 countdown clock</title>
+    <link rel="stylesheet" href="./pure.css">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/grids-responsive-min.css">
+    <link href="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/css/bootstrap-combined.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" media="screen"
+      href="https://tarruda.github.com/bootstrap-datetimepicker/assets/css/bootstrap-datetimepicker.min.css">
+  </head>
+  <body>
+    <div class="p-m pure-menu-horizontal pure-menu-scrollable pm-fix">
+      <a href="#" class="pure-menu-heading"><img width='32' height='32' title='' alt='' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IB2cksfwAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAAsTAAALEwEAmpwYAAABWWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS40LjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyI+CiAgICAgICAgIDx0aWZmOk9yaWVudGF0aW9uPjE8L3RpZmY6T3JpZW50YXRpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgpMwidZAAABnklEQVRYCb2XUVLEMAxDW4b7X7mgwssorp2mtDQzYMeWJcW7fLBs27bo56VzEPp4SVgyEl9/o+77+SSZiAf3xYxEdCKeOib2+6yBSCYBCJX7AVv1HbuMDEDUDdhF/SjCTKzbWJ9W34FZInCwSnhaXEOjDUBEFD4KqnbrZBuQiIu6QFYX/oqxjj8z4IJZLhOVkQw/NBcNAFYkz0hVmzURcbo3bjegopo+gJE28N3341jqzHCPseNyAw7ESCbgOOVgY70TsmbHGf8KsiEGsh4GPDqOHA7z8ZNWG3CgSCDyOjl9MJkYPWZanDHQwBMJQpUJzLa+fwQUIYl6Z33wmhcWvNfJW3x6AxDzUu6KGCLuPd+Ag5/K4zY7cYn81wamH3BlA/E10yIj4JsbOKxfxqoNZOA7G8j49sVkGxA4EytJdqb613ButIHMRC2Td4biGsk2ANXpMMA/Rj1wqzYAp0z4JtyU18HHeIZZRxuIZE/f98ecbSCKnr0o4qt72+RVAxXhTL2JOvjMwJ0Xp4Iurvzud6ASqepRf1lf/Nf8IK7CF5KQSk/UTlbbAAAAAElFTkSuQmCC'></a>
+      <ul class="pure-menu-list">
+	<li class="pure-menu-item"><a href="#" class="pure-menu-link">The year 2038 countdown clock</a></li>
+      </ul>  
+    </div>
+
+    <div class="l-content">
+
+      <div class="a-t pure-g">
+
+	<div id="y2038_countdown" class="pure-u-1 pure-u-md-1-1">
+	  <div class="at at-y2038-cd">
+            <div class="at-header">
+              <h2>The year 2038 countdown</h2>
+	      
+              <span class="at-val">
+		<div>&nbsp;</div><div id="y2038_cd">0000000000</div>
+              </span>
+            </div>
+	  </div>
+	</div>
+	
+	<div id="unix" class="pure-u-1 pure-u-md-1-1">
+	  <div class="at at-unixtime">
+            <div class="at-header">
+              <h2>The unix time</h2>
+	      
+              <span class="at-val">
+		<div>&nbsp;</div><div id="unixtime">0000000000</div>
+              </span>
+            </div>
+	  </div>
+	</div>
+	
+	<div id="user_countdown" class="pure-u-1 pure-u-md-1-1">
+	  <div class="at at-user-cd">
+            <div class="at-header">
+              <h2>User countdown</h2>
+	      
+              <span class="at-val">
+		<div>&nbsp;</div><div id="user_cd">0000000000</div>
+              </span>
+            </div>
+	  </div>
+	</div>
+	
+      </div>
+  
+      <div id="settings">
+
+	<div id="sec_sch" class="if pure-g">
+	  <div class="pure-u-1 pure-u-md-1-2">
+            <div class="l-box">
+              <h3 class="if-head">User Countdown</h3>
+              <p>Set user defined countdown date/time.</p>
+              <p>
+		<form id="user_countdown" class="pure-form pure-form-stacked">
+		  <fieldset>
+		    <legend>Date</legend>
+		    <div class="pure-g">
+		      <div class="pure-u-1 pure-u-md-1-1">
+			<div id="datetimepicker1" class="input-append date">
+			  <input type="text" id="user_date"></input>
+			  <span class="add-on">
+			    <i data-time-icon="icon-time" data-date-icon="icon-calendar">
+			    </i>
+			  </span>
+			</div>
+		      </div>
+		    </div>
+		    <legend>Time</legend>
+		    <div class="pure-g">
+		      <div class="pure-u-1 pure-u-md-1-1">
+			<div id="datetimepicker2" class="input-append date">
+			  <input type="text" id="user_time"></input>
+			  <span class="add-on">
+			    <i data-time-icon="icon-time" data-date-icon="icon-calendar">
+			    </i>
+			  </span>
+			</div>
+		      </div>
+		    </div>
+		    <legend>Timezone</legend>
+		    <div class="pure-g">
+		      <div class="pure-u-1 pure-u-md-1-1">
+			<select id="user_tz" name="tz">
+			  <option value="1100">+1100</option>
+			  <option value="1000">+1000</option>
+			  <option value="0900">+0900 (JST)</option>
+			  <option value="0800">+0800</option>
+			  <option value="0700">+0700</option>
+			  <option value="0600">+0600</option>
+			  <option value="0500">+0500</option>
+			  <option value="0400">+0400</option>
+			  <option value="0300">+0300</option>
+			  <option value="0200">+0200</option>
+			  <option value="0100">+0100</option>
+			  <option value="0000" selected>0000 (UTC)</option>
+			  <option value="-0100">-0100</option>
+			  <option value="-0200">-0200</option>
+			  <option value="-0300">-0300</option>
+			  <option value="-0400">-0400</option>
+			  <option value="-0500">-0500</option>
+			  <option value="-0600">-0600</option>
+			  <option value="-0700">-0700</option>
+			  <option value="-0800">-0800</option>
+			  <option value="-0900">-0900</option>
+			  <option value="-1000">-1000</option>
+			  <option value="-1100">-1100</option>
+			  <option value="-1200">-1200 (AOE)</option>
+			</select>			
+		      </div>
+		    </div>
+		    <button id="sub_countdown" type="submit" class="pure-button pure-button-primary">Submit</button>
+		  </fieldset>
+		</form>
+              </p>
+            </div>
+	  </div>
+
+	  <div class="pure-u-1 pure-u-md-1-2">
+            <div class="l-box">
+              <h3 class="if-head">Timezone setting</h3>
+              <p>Set user timezone.</p>
+              <p>
+		<form id="config" class="pure-form pure-form-stacked">
+		  <fieldset>
+		    <legend>Timezone</legend>
+		    <div class="pure-g">
+		      <div class="pure-u-1 pure-u-md-1-1">
+			<select id="tz" name="tz">
+			  <option value="1100">+1100</option>
+			  <option value="1000">+1000</option>
+			  <option value="0900">+0900 (JST)</option>
+			  <option value="0800">+0800</option>
+			  <option value="0700">+0700</option>
+			  <option value="0600">+0600</option>
+			  <option value="0500">+0500</option>
+			  <option value="0400">+0400</option>
+			  <option value="0300">+0300</option>
+			  <option value="0200">+0200</option>
+			  <option value="0100">+0100</option>
+			  <option value="0000">+0000 (UTC)</option>
+			  <option value="-0100">-0100</option>
+			  <option value="-0200">-0200</option>
+			  <option value="-0300">-0300</option>
+			  <option value="-0400">-0400</option>
+			  <option value="-0500">-0500</option>
+			  <option value="-0600">-0600</option>
+			  <option value="-0700">-0700</option>
+			  <option value="-0800">-0800</option>
+			  <option value="-0900">-0900</option>
+			  <option value="-1000">-1000</option>
+			  <option value="-1100">-1100</option>
+			  <option value="-1200">-1200 (AOE)</option>
+			</select>			
+		      </div>
+		    </div>
+		    <button id="sub_config" type="submit" class="pure-button pure-button-primary">Submit</button>
+		  </fieldset>
+		</form>
+              </p>
+        </div>
+      </div>
+
+      <div class="pure-u-1 pure-u-md-1-2">
+        <div class="l-box">
+          <h3 class="if-head">Reset WiFi settings</h3>
+          <p>Reset the WiFi AP setting by clicking this button.</p>
+	  <p>
+	    <form action="/wifireset" class="pure-form pure-form-stacked">
+	      <fieldset>
+		<button type="submit" class="btn-red pure-button">Reset</button>
+	      </fieldset>
+	    </form>
+          </p>
+        </div>
+      </div>
+
+      <div class="pure-u-1 pure-u-md-1-2">
+        <div class="l-box">
+          <h3 class="if-head">Reset ALL settings</h3>
+          <p>Reset the ALL setting by clicking this button.</p>
+	  <p>
+	    <form action="/reset" class="pure-form pure-form-stacked">
+	      <fieldset>
+		<button type="submit" class="btn-red pure-button">Reset</button>
+	      </fieldset>
+	    </form>
+          </p>
+        </div>
+      </div>	
+    </div> <!-- end if -->
+  </div> <!-- end setting -->
+</div> <!-- end l-content -->
+<div class="footer l-box">
+    <p>
+        The year 2038 countdown clock by @omzn 2018.
+    </p>
+</div>
+    <script type="text/javascript"
+     src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.3/jquery.min.js">
+    </script> 
+    <script type="text/javascript"
+     src="https://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js">
+    </script>
+    <script type="text/javascript"
+     src="https://tarruda.github.com/bootstrap-datetimepicker/assets/js/bootstrap-datetimepicker.min.js">
+    </script>
+<script type="text/javascript">
+var user_date_epoch;
+$('form#config').submit(
+    function(ev) {
+	$.post('/config',
+                "timezone="+$('#tz').val(),
+	       read,"json");
+	return false;
+    });
+$('form#user_countdown').submit(
+    function(ev) {
+	$.post('/countdown',
+                "date="+$('#user_date').val() + 
+                "&time="+$('#user_time').val() +
+                "&timezone="+$('#user_tz').val(),
+	       read,"json");
+	return false;
+    });
+
+function read(json) {
+  if (json.user_countdown_eposh) {
+    user_date_epoch = json.user_countdown_epoch * 1000;
+  }
+}
+
+function update() {
+    var now = Date.now() / 1000;
+    $('#unixtime').html(Math.floor(now).toString());
+    var y2038cd = 0x7fffffff - Math.floor(now);
+    $('#y2038_cd').html(y2038cd.toString());
+    var ucd = Math.floor(user_date_epoch/1000) - Math.floor(now);
+    $('#user_cd').html(ucd.toString());
+}
+
+function confset() {
+  $.getJSON('/status',function(json){
+    read(json);
+    var tzh = Math.floor(json.timezone / 3600);
+    var tzstr = "00";
+    if (Math.abs(tzh) < 10) {
+      tzstr = "0" + tzh.toString() + "00";
+    }
+    if (tzh < 0) {
+      tzstr = "-" + tzstr; 
+    }
+    $("#tz").val(tzstr);
+    user_date_epoch = json.user_countdown_epoch * 1000;
+    var user_date = new Date(user_date_epoch);
+    var yyyy = user_date.getUTCFullYear();
+    var mm = user_date.getUTCMonth()+1;
+    var dd = user_date.getUTCDate();
+    var hh = user_date.getUTCHours();
+    var MM = user_date.getUTCMinutes();
+    var mm_str = mm.toString();	      
+    var dd_str = dd.toString();	      
+    var hh_str = hh.toString();	      
+    var MM_str = MM.toString();	      
+    if (mm < 10) mm_str = "0" + mm_str;
+    if (dd < 10) dd_str = "0" + dd_str;
+    if (hh < 10) hh_str = "0" + hh_str;
+    if (MM < 10) MM_str = "0" + MM_str;
+	      
+	     $('#user_date').val(yyyy.toString() + "-" + mm_str + "-" + dd_str);
+	     $('#user_time').val(hh_str + ":" + MM_str);
+
+	     });
+}
+
+$(function() {
+    $('#datetimepicker1').datetimepicker({
+      format: 'yyyy-MM-dd',
+	     pickTime: false, 
+	     pickDate: true,
+	     pickSeconds: false,
+      language: 'en'
+    });    
+    $('#datetimepicker2').datetimepicker({
+	     format: 'hh:mm',
+	     pickTime: true, 
+	     pickDate: false,
+	     pickSeconds: false,
+	     language: 'en'
+    });    
+
+    confset();
+    update();
+    setInterval("update()",1000);
+});
+
+</script>
+</body>
+</html>
